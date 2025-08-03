@@ -116,6 +116,58 @@ struct Vertex {
     func midpoint(to other: Vertex) -> Vertex {
         return Vertex(x: (x + other.x) / 2.0, y: (y + other.y) / 2.0)
     }
+    
+    // MARK: - Distance Methods (Subtask 4.5)
+    
+    /// Calculates the Euclidean distance to another vertex
+    /// - Parameter other: The target vertex
+    /// - Returns: Distance in points
+    func distance(to other: Vertex) -> Double {
+        let deltaX = other.x - x
+        let deltaY = other.y - y
+        let distance = sqrt(deltaX * deltaX + deltaY * deltaY)
+        
+        if Constants.Debug.enableGeometryDebug {
+            debugLog("Distance from (\(String(format: "%.2f", x)), \(String(format: "%.2f", y))) to (\(String(format: "%.2f", other.x)), \(String(format: "%.2f", other.y))) = \(String(format: "%.3f", distance))", category: .vertex)
+        }
+        
+        return distance
+    }
+    
+    /// Calculates the squared distance to another vertex (faster when comparing distances)
+    /// - Parameter other: The target vertex
+    /// - Returns: Squared distance in points²
+    func squaredDistance(to other: Vertex) -> Double {
+        let deltaX = other.x - x
+        let deltaY = other.y - y
+        return deltaX * deltaX + deltaY * deltaY
+    }
+    
+    /// Static method to calculate distance between two vertices
+    /// - Parameters:
+    ///   - from: Starting vertex
+    ///   - to: Ending vertex
+    /// - Returns: Distance in points
+    static func distance(from: Vertex, to: Vertex) -> Double {
+        return from.distance(to: to)
+    }
+    
+    /// Checks if another vertex is within a specified distance
+    /// - Parameters:
+    ///   - other: The other vertex
+    ///   - threshold: Maximum distance threshold
+    /// - Returns: True if within threshold distance
+    func isWithinDistance(_ threshold: Double, of other: Vertex) -> Bool {
+        return distance(to: other) <= threshold
+    }
+    
+    /// Checks if this vertex is close enough to another to be considered matching
+    /// Uses Constants.Geometry.vertexMatchTolerance for the distance check
+    /// - Parameter other: The other vertex
+    /// - Returns: True if vertices match within tolerance
+    func matches(_ other: Vertex) -> Bool {
+        return isWithinDistance(Constants.Geometry.vertexMatchTolerance, of: other)
+    }
 }
 
 // MARK: - Equatable Conformance (Subtask 4.2)

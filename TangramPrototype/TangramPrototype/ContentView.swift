@@ -146,6 +146,7 @@ struct ContentView: View {
                 let translatedVertex = testVertex.translated(by: 25, dy: 25)
                 let rotatedVertex = testVertex.rotated(by: .pi / 4) // 45 degrees
                 let nearbyVertex = Vertex(x: 100.001, y: 50.001) // Within tolerance
+                let distantVertex = Vertex(x: 200, y: 150) // For distance testing
                 
                 Group {
                     Text("Original: \(testVertex.description)")
@@ -168,6 +169,24 @@ struct ContentView: View {
                             .offset(x: translatedVertex.x / 4, y: translatedVertex.y / 4)
                         Text("Translated")
                             .font(.caption)
+                    }
+                    
+                    // Distance testing (4.5)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("🔸 Distance Tests (4.5):")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.blue)
+                        
+                        let distance1 = testVertex.distance(to: translatedVertex)
+                        let distance2 = testVertex.distance(to: distantVertex)
+                        let staticDistance = Vertex.distance(from: testVertex, to: distantVertex)
+                        
+                        Text("Distance to translated: \(String(format: "%.2f", distance1)) pts")
+                        Text("Distance to distant: \(String(format: "%.2f", distance2)) pts")
+                        Text("Static distance: \(String(format: "%.2f", staticDistance)) pts")
+                        Text("Within 50pts? \(testVertex.isWithinDistance(50, of: translatedVertex) ? "YES ✓" : "NO ✗")")
+                        Text("Vertices match? \(testVertex.matches(nearbyVertex) ? "YES ✓" : "NO ✗")")
                     }
                 }
                 .font(.caption)
