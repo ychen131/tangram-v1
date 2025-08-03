@@ -9,14 +9,15 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        VStack(spacing: 16) {
-            Text("🧩 Tangram Prototype")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-            
-            Text("Testing Implementation So Far...")
-                .font(.headline)
-                .foregroundColor(.secondary)
+        ScrollView(.vertical, showsIndicators: true) {
+            VStack(spacing: 16) {
+                Text("🧩 Tangram Prototype")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                
+                Text("Testing Implementation So Far...")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
             
             // Test Constants Display
             VStack(alignment: .leading, spacing: 8) {
@@ -135,9 +136,51 @@ struct ContentView: View {
             .background(Color.orange.opacity(0.05))
             .cornerRadius(12)
             
+            // Vertex Testing Section (NEW!)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("🔹 Vertex Testing (Live Demo):")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                
+                let testVertex = Vertex(x: 100, y: 50)
+                let translatedVertex = testVertex.translated(by: 25, dy: 25)
+                let rotatedVertex = testVertex.rotated(by: .pi / 4) // 45 degrees
+                let nearbyVertex = Vertex(x: 100.001, y: 50.001) // Within tolerance
+                
+                Group {
+                    Text("Original: \(testVertex.description)")
+                    Text("Translated (+25,+25): (\(String(format: "%.1f", translatedVertex.x)), \(String(format: "%.1f", translatedVertex.y)))")
+                    Text("Rotated 45°: (\(String(format: "%.2f", rotatedVertex.x)), \(String(format: "%.2f", rotatedVertex.y)))")
+                    Text("Equality Test: \(testVertex == nearbyVertex ? "EQUAL ✓" : "NOT EQUAL ✗") (tolerance: \(Constants.Geometry.vertexMatchTolerance))")
+                    
+                    // Visual representation
+                    HStack {
+                        Circle()
+                            .fill(Color.red)
+                            .frame(width: 8, height: 8)
+                            .offset(x: testVertex.x / 4, y: testVertex.y / 4)
+                        Text("Original")
+                            .font(.caption)
+                        
+                        Circle()
+                            .fill(Color.blue)
+                            .frame(width: 8, height: 8)
+                            .offset(x: translatedVertex.x / 4, y: translatedVertex.y / 4)
+                        Text("Translated")
+                            .font(.caption)
+                    }
+                }
+                .font(.caption)
+                .foregroundColor(.secondary)
+            }
+            .padding()
+            .background(Color.purple.opacity(0.05))
+            .cornerRadius(12)
+            
             Spacer()
+            }
+            .padding(Constants.UI.standardPadding) // Using our constant!
         }
-        .padding(Constants.UI.standardPadding) // Using our constant!
         .onAppear {
             // Test debug logging for all constant groups
             Constants.Geometry.logGeometryConstants()
