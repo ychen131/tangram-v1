@@ -266,6 +266,27 @@ struct Constants {
             debugLog("Categories enabled - Geometry: \(enableGeometryDebug), UI: \(enableUIDebug), Game: \(enableGameDebug)", category: .debug)
         }
     }
+    
+    // MARK: - Colors
+    struct Colors {
+        /// Colors for tangram pieces to provide clear visual differentiation
+        struct Pieces {
+            static let largeTriangle1: Color = .red
+            static let largeTriangle2: Color = Color(red: 0.0, green: 0.0, blue: 0.5) // Navy
+            static let smallTriangle1: Color = .blue
+            static let smallTriangle2: Color = .purple
+            static let mediumTriangle: Color = .green
+            static let square: Color = .yellow
+            static let parallelogram: Color = .orange
+        }
+        
+        /// UI accent colors
+        struct UI {
+            static let background: Color = Color.gray.opacity(0.05)
+            static let vertexDot: Color = .red
+            static let strokeColor: Color = .black
+        }
+    }
 }
 
 // MARK: - Debug Logging

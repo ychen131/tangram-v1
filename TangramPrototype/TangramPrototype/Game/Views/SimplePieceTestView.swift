@@ -48,7 +48,7 @@ struct SimplePieceTestView: View {
                 // Test display area
                 ZStack {
                     Rectangle()
-                        .fill(Color.gray.opacity(0.1))
+                        .fill(Constants.Colors.UI.background)
                         .frame(height: 400)
                         .cornerRadius(12)
                     
@@ -118,35 +118,51 @@ struct SimplePieceTestView: View {
                 type: .largeTriangle1,
                 position: CGPoint(x: 120, y: 120),
                 rotation: 0,
-                color: .red
+                color: Constants.Colors.Pieces.largeTriangle1
             ),
             // Small Triangle (1×1 legs) - rotated 45° 
             Piece(
                 type: .smallTriangle1,
                 position: CGPoint(x: 280, y: 120),
                 rotation: Double.pi / 4,
-                color: .blue
+                color: Constants.Colors.Pieces.smallTriangle1
             ),
             // Square (1×1 sides) - displayed as diamond, no additional rotation
             Piece(
                 type: .square,
                 position: CGPoint(x: 120, y: 220),
                 rotation: 0,
-                color: .green
+                color: Constants.Colors.Pieces.square
             ),
             // Medium Triangle (√2×√2 legs) - rotated 90°
             Piece(
                 type: .mediumTriangle,
                 position: CGPoint(x: 280, y: 220),
                 rotation: Double.pi / 2,
-                color: .purple
+                color: Constants.Colors.Pieces.mediumTriangle
             ),
-            // Parallelogram (base=2, height=1) - rotated 30°
+            // Parallelogram (base=√2, height=1/√2) - rotated 30°
             Piece(
                 type: .parallelogram,
                 position: CGPoint(x: 200, y: 320),
                 rotation: Double.pi / 6,
-                color: .orange
+                color: Constants.Colors.Pieces.parallelogram
+            ),
+            
+            // Second Large Triangle (2×2 legs) - rotated 180°
+            Piece(
+                type: .largeTriangle2,
+                position: CGPoint(x: 120, y: 420),
+                rotation: Double.pi,
+                color: Constants.Colors.Pieces.largeTriangle2
+            ),
+            
+            // Second Small Triangle (1×1 legs) - rotated 135°
+            Piece(
+                type: .smallTriangle2,
+                position: CGPoint(x: 280, y: 420),
+                rotation: Double.pi * 3/4,
+                color: Constants.Colors.Pieces.smallTriangle2
             )
         ]
         
@@ -172,7 +188,7 @@ struct SimplePieceView: View {
             // Draw actual tangram shape using current vertices
             actualTangramShape
                 .fill(piece.color.opacity(0.6))
-                .stroke(Color.black, lineWidth: 2)
+                                    .stroke(Constants.Colors.UI.strokeColor, lineWidth: 2)
             
             // Show piece type label
             Text(piece.type.displayName)
@@ -188,8 +204,8 @@ struct SimplePieceView: View {
             if showVertices {
                 ForEach(piece.currentVertices.indices, id: \.self) { index in
                     let vertex = piece.currentVertices[index]
-                    Circle()
-                        .fill(Color.red)
+                                            Circle()
+                            .fill(Constants.Colors.UI.vertexDot)
                         .frame(width: 10, height: 10)
                         .position(x: vertex.x, y: vertex.y)
                         .overlay(
