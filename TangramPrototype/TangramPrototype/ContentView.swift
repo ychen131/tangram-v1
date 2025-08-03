@@ -9,7 +9,8 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        ScrollView(.vertical, showsIndicators: true) {
+        NavigationView {
+            ScrollView(.vertical, showsIndicators: true) {
             VStack(spacing: 16) {
                 Text("🧩 Tangram Prototype")
                     .font(.largeTitle)
@@ -18,6 +19,21 @@ struct ContentView: View {
                 Text("Testing Implementation So Far...")
                     .font(.headline)
                     .foregroundColor(.secondary)
+                
+                // Navigation to interactive tests
+                NavigationLink(destination: SimplePieceTestView()) {
+                    HStack {
+                        Image(systemName: "gamecontroller.fill")
+                        Text("🧩 Interactive Piece Model Test")
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                    }
+                    .padding()
+                    .background(Color.blue.opacity(0.1))
+                    .foregroundColor(.blue)
+                    .cornerRadius(12)
+                }
+                .padding(.horizontal)
             
             // Test Constants Display
             VStack(alignment: .leading, spacing: 8) {
@@ -200,6 +216,8 @@ struct ContentView: View {
             }
             .padding(Constants.UI.standardPadding) // Using our constant!
         }
+        .navigationTitle("Tangram Prototype")
+        .navigationBarTitleDisplayMode(.large)
         .onAppear {
             // Test debug logging for all constant groups
             Constants.Geometry.logGeometryConstants()
@@ -207,6 +225,7 @@ struct ContentView: View {
             Constants.Game.logGameConstants()
             Constants.Debug.logDebugConstants()
             debugLog("ContentView appeared - All constants test successful!", category: .ui)
+        }
         }
     }
 }
