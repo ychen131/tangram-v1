@@ -144,16 +144,127 @@ struct Constants {
     // MARK: - Game Logic Constants
     /// Core game mechanics and state management constants
     struct Game {
-        // TODO: Add piece counts in subtask 3.4
-        // TODO: Add game state values in subtask 3.4
-        // TODO: Add scoring constants in subtask 3.4
+        /// Total number of tangram pieces in the game
+        /// Standard tangram set has exactly 7 pieces
+        static let totalPieceCount: Int = 7
+        
+        /// Individual piece count by type for validation
+        static let smallTriangleCount: Int = 2
+        static let largeTriangleCount: Int = 2  
+        static let mediumTriangleCount: Int = 1
+        static let squareCount: Int = 1
+        static let parallelogramCount: Int = 1
+        
+        /// Maximum number of puzzles/levels in the game
+        /// Can be expanded as more puzzle templates are added
+        static let maxPuzzleCount: Int = 50
+        
+        /// Scoring system configuration
+        struct Scoring {
+            /// Base points awarded for completing any puzzle
+            static let basePuzzlePoints: Int = 100
+            
+            /// Bonus points for speed completion (per second under target)
+            static let speedBonusPerSecond: Int = 5
+            
+            /// Perfect placement bonus (no repositioning needed)
+            static let perfectPlacementBonus: Int = 50
+            
+            /// Hint usage penalty (deducted per hint used)
+            static let hintPenalty: Int = 10
+            
+            /// Maximum possible score for a single puzzle
+            static let maxPuzzleScore: Int = 300
+        }
+        
+        /// Difficulty level configuration
+        struct Difficulty {
+            /// Easy: Simple shapes with clear outlines
+            static let easyTargetTime: TimeInterval = 180.0  // 3 minutes
+            static let easyHintLimit: Int = 5
+            
+            /// Medium: Moderate complexity shapes
+            static let mediumTargetTime: TimeInterval = 120.0  // 2 minutes  
+            static let mediumHintLimit: Int = 3
+            
+            /// Hard: Complex shapes, minimal hints
+            static let hardTargetTime: TimeInterval = 90.0   // 1.5 minutes
+            static let hardHintLimit: Int = 1
+            
+            /// Expert: No hints, tight time limits
+            static let expertTargetTime: TimeInterval = 60.0  // 1 minute
+            static let expertHintLimit: Int = 0
+        }
+        
+        /// Game session configuration
+        struct Session {
+            /// Maximum time allowed per puzzle (in seconds)
+            static let maxPuzzleTime: TimeInterval = 300.0  // 5 minutes
+            
+            /// Auto-save interval for game progress
+            static let autoSaveInterval: TimeInterval = 30.0  // 30 seconds
+            
+            /// Time between puzzle completion and next puzzle presentation
+            static let puzzleTransitionDelay: TimeInterval = 2.0
+        }
+        
+        // Debug log game constants initialization
+        static func logGameConstants() {
+            debugLog("Game constants initialized - Total pieces: \(totalPieceCount)", category: .game)
+            debugLog("Max puzzle score: \(Scoring.maxPuzzleScore) points", category: .game)
+            debugLog("Difficulty levels: Easy(\(Difficulty.easyTargetTime)s), Expert(\(Difficulty.expertTargetTime)s)", category: .game)
+        }
     }
     
     // MARK: - Debug & Development Constants
     /// Development and debugging configuration flags
     struct Debug {
-        // TODO: Add debug flags in subtask 3.5
-        // TODO: Add logging levels in subtask 3.5
+        /// Enable/disable all debug logging (master switch)
+        /// Set to false for production builds to improve performance
+        static let enableDebugLogging: Bool = true
+        
+        /// Enable detailed geometry calculations logging
+        /// Useful for debugging piece positioning and win detection
+        static let enableGeometryDebug: Bool = true
+        
+        /// Enable UI interaction logging (touches, drags, animations)
+        /// Helpful for debugging user input and animation issues
+        static let enableUIDebug: Bool = true
+        
+        /// Enable game logic debugging (scoring, state changes)
+        /// Shows game flow and scoring calculations
+        static let enableGameDebug: Bool = true
+        
+        /// Enable performance monitoring logs
+        /// Tracks frame rates and memory usage
+        static let enablePerformanceDebug: Bool = false
+        
+        /// Show piece bounding boxes and collision areas
+        /// Visual debugging aid for development
+        static let showDebugOverlays: Bool = false
+        
+        /// Enable automatic screenshot capture for failed tests
+        /// Useful for debugging UI test failures
+        static let captureFailureScreenshots: Bool = true
+        
+        /// Force all puzzles to auto-complete after this duration (debug only)
+        /// Set to 0 to disable. Useful for testing completion flows
+        static let autoCompleteDelay: TimeInterval = 0.0  // Disabled by default
+        
+        /// Skip victory animations for faster testing
+        /// Speeds up automated testing and development iteration
+        static let skipVictoryAnimations: Bool = false
+        
+        /// Log memory usage every N seconds (0 = disabled)
+        /// Helps identify memory leaks during development
+        static let memoryLoggingInterval: TimeInterval = 0.0  // Disabled
+        
+        // Debug log debug constants initialization
+        static func logDebugConstants() {
+            debugLog("Debug constants initialized - Logging enabled: \(enableDebugLogging)", category: .debug)
+            debugLog("Debug overlays: \(showDebugOverlays), Auto-complete: \(autoCompleteDelay)s", category: .debug)
+            debugLog("Categories enabled - Geometry: \(enableGeometryDebug), UI: \(enableUIDebug), Game: \(enableGameDebug)", category: .debug)
+        }
     }
 }
 
@@ -172,6 +283,7 @@ enum LogCategory: String {
     case geometry = "GEOMETRY"
     case ui = "UI"
     case game = "GAME"
+    case debug = "DEBUG"
     case vertex = "VERTEX"
     case anchor = "ANCHOR"
 }

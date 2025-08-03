@@ -93,13 +93,57 @@ struct ContentView: View {
             .background(Color.blue.opacity(0.05))
             .cornerRadius(Constants.UI.standardCornerRadius) // Using our constant!
             
+            // Game Constants Test Section
+            VStack(alignment: .leading, spacing: 8) {
+                Text("🎮 Game Logic Constants:")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                
+                Group {
+                    Text("Total Pieces: \(Constants.Game.totalPieceCount)")
+                    Text("Base Score: \(Constants.Game.Scoring.basePuzzlePoints) pts")
+                    Text("Max Score: \(Constants.Game.Scoring.maxPuzzleScore) pts")
+                    Text("Easy Target: \(Int(Constants.Game.Difficulty.easyTargetTime))s")
+                    Text("Expert Target: \(Int(Constants.Game.Difficulty.expertTargetTime))s")
+                    Text("Max Puzzle Time: \(Int(Constants.Game.Session.maxPuzzleTime))s")
+                }
+                .font(.caption)
+                .foregroundColor(.secondary)
+            }
+            .padding()
+            .background(Color.green.opacity(0.05))
+            .cornerRadius(12)
+            
+            // Debug Constants Test Section
+            VStack(alignment: .leading, spacing: 8) {
+                Text("🔧 Debug & Development Constants:")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                
+                Group {
+                    Text("Debug Logging: \(Constants.Debug.enableDebugLogging ? "ON" : "OFF")")
+                    Text("Geometry Debug: \(Constants.Debug.enableGeometryDebug ? "ON" : "OFF")")
+                    Text("UI Debug: \(Constants.Debug.enableUIDebug ? "ON" : "OFF")")
+                    Text("Game Debug: \(Constants.Debug.enableGameDebug ? "ON" : "OFF")")
+                    Text("Debug Overlays: \(Constants.Debug.showDebugOverlays ? "ON" : "OFF")")
+                    Text("Auto-complete: \(Constants.Debug.autoCompleteDelay > 0 ? "\(Int(Constants.Debug.autoCompleteDelay))s" : "OFF")")
+                }
+                .font(.caption)
+                .foregroundColor(.secondary)
+            }
+            .padding()
+            .background(Color.orange.opacity(0.05))
+            .cornerRadius(12)
+            
             Spacer()
         }
         .padding(Constants.UI.standardPadding) // Using our constant!
         .onAppear {
-            // Test debug logging for both constant groups
+            // Test debug logging for all constant groups
             Constants.Geometry.logGeometryConstants()
             Constants.UI.logUIConstants()
+            Constants.Game.logGameConstants()
+            Constants.Debug.logDebugConstants()
             debugLog("ContentView appeared - All constants test successful!", category: .ui)
         }
     }
