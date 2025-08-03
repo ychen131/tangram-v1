@@ -73,13 +73,34 @@ struct ContentView: View {
             .background(Color.gray.opacity(0.05))
             .cornerRadius(12)
             
+            // UI Constants Test Section
+            VStack(alignment: .leading, spacing: 8) {
+                Text("🎨 UI & Animation Constants:")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                
+                Group {
+                    Text("Standard Animation: \(Constants.UI.standardAnimationDuration)s")
+                    Text("Quick Animation: \(Constants.UI.quickAnimationDuration)s")
+                    Text("Drag Threshold: \(Constants.UI.dragStartThreshold)pt")
+                    Text("Touch Area: \(Constants.UI.minimumTouchArea)pt")
+                    Text("Standard Padding: \(Constants.UI.standardPadding)pt")
+                }
+                .font(.caption)
+                .foregroundColor(.secondary)
+            }
+            .padding()
+            .background(Color.blue.opacity(0.05))
+            .cornerRadius(Constants.UI.standardCornerRadius) // Using our constant!
+            
             Spacer()
         }
-        .padding()
+        .padding(Constants.UI.standardPadding) // Using our constant!
         .onAppear {
-            // Test debug logging
+            // Test debug logging for both constant groups
             Constants.Geometry.logGeometryConstants()
-            debugLog("ContentView appeared - Constants test successful!", category: .ui)
+            Constants.UI.logUIConstants()
+            debugLog("ContentView appeared - All constants test successful!", category: .ui)
         }
     }
 }

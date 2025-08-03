@@ -70,9 +70,75 @@ struct Constants {
     // MARK: - UI & Animation Constants  
     /// User interface and animation timing constants
     struct UI {
-        // TODO: Add animation durations in subtask 3.3
-        // TODO: Add drag sensitivity in subtask 3.3
-        // TODO: Add UI spacing constants in subtask 3.3
+        /// Standard animation duration for piece movements (in seconds)
+        /// Used for smooth piece dragging and positioning feedback
+        static let standardAnimationDuration: TimeInterval = 0.3
+        
+        /// Quick animation duration for snapping and micro-interactions
+        /// Used for piece snapping to correct positions
+        static let quickAnimationDuration: TimeInterval = 0.15
+        
+        /// Victory animation duration for celebration effects
+        /// Used when puzzle is completed successfully
+        static let victoryAnimationDuration: TimeInterval = 0.8
+        
+        /// Drag sensitivity threshold (minimum distance to start drag)
+        /// Prevents accidental drags from small finger movements
+        static let dragStartThreshold: CGFloat = 8.0
+        
+        /// Maximum drag velocity for smooth interaction (points/second)
+        /// Above this velocity, disable rotation snapping for fluid movement
+        static let maxSmoothDragVelocity: CGFloat = 500.0
+        
+        /// Minimum touch area for piece interaction (44pt is iOS standard)
+        /// Ensures pieces are easily tappable on all device sizes
+        static let minimumTouchArea: CGFloat = 44.0
+        
+        /// Haptic feedback intensity for piece interactions
+        /// Light feedback when pieces are selected or snapped
+        static let hapticFeedbackIntensity: Float = 0.7
+        
+        // MARK: - Layout & Spacing Constants
+        
+        /// Standard padding between UI elements
+        static let standardPadding: CGFloat = 16.0
+        
+        /// Large padding for major UI sections
+        static let largePadding: CGFloat = 24.0
+        
+        /// Small padding for tight layouts
+        static let smallPadding: CGFloat = 8.0
+        
+        /// Corner radius for UI cards and overlays
+        static let standardCornerRadius: CGFloat = 12.0
+        
+        /// Game area margin from screen edges
+        /// Ensures pieces don't get dragged off-screen
+        static let gameAreaMargin: CGFloat = 20.0
+        
+        /// Z-index for dragged pieces (ensures they appear on top)
+        static let draggedPieceZIndex: Double = 100.0
+        
+        // MARK: - Visual Feedback Constants
+        
+        /// Scale factor for piece selection animation (slightly larger)
+        static let selectionScaleFactor: CGFloat = 1.05
+        
+        /// Opacity for piece shadows and depth effects
+        static let shadowOpacity: Double = 0.15
+        
+        /// Shadow radius for piece depth effects
+        static let shadowRadius: CGFloat = 4.0
+        
+        /// Shadow offset for realistic depth appearance
+        static let shadowOffset: CGSize = CGSize(width: 0, height: 2)
+        
+        // Debug log UI constants initialization
+        static func logUIConstants() {
+            debugLog("UI constants initialized - standardAnimation: \(standardAnimationDuration)s", category: .ui)
+            debugLog("Drag threshold: \(dragStartThreshold)pt, Touch area: \(minimumTouchArea)pt", category: .ui)
+            debugLog("Padding: small=\(smallPadding), standard=\(standardPadding), large=\(largePadding)", category: .ui)
+        }
     }
     
     // MARK: - Game Logic Constants
