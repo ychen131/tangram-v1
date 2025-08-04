@@ -15,6 +15,9 @@ struct SimplePieceTestView: View {
     @State private var selectedPieceIndex: Int? = nil
     @State private var showVertices = true
     @State private var dragStartPosition: CGPoint = .zero
+    @State private var containerSize: CGSize = CGSize(width: 350, height: 400)
+    @State private var showTestDot = true
+    @State private var useSimpleShapes = false
     
     var body: some View {
         ScrollView {
@@ -27,7 +30,8 @@ struct SimplePieceTestView: View {
             .padding()
         }
         .onAppear {
-            setupTestPieces()
+            // Initial setup with default size - will be updated by GeometryReader
+            setupTestPieces(in: containerSize)
         }
     }
     
@@ -44,61 +48,141 @@ struct SimplePieceTestView: View {
     }
     
     private var controlsView: some View {
-        HStack {
-            Button("Reset Pieces") {
-                setupTestPieces()
+        VStack(spacing: 12) {
+            HStack {
+                Button("Reset Pieces") {
+                    setupTestPieces(in: containerSize)
+                }
+                .buttonStyle(.borderedProminent)
+                
+                Button("Rotate All") {
+                    rotateAllPieces()
+                }
+                .buttonStyle(.borderedProminent)
             }
-            .buttonStyle(.borderedProminent)
             
-            Button("Rotate All") {
-                rotateAllPieces()
+            HStack {
+                Toggle("Show Vertices", isOn: $showVertices)
+                    .toggleStyle(.button)
+                    .foregroundColor(showVertices ? .blue : .secondary)
+                
+                Toggle("Debug Dot", isOn: $showTestDot)
+                    .toggleStyle(.button)
+                    .foregroundColor(showTestDot ? .red : .secondary)
+                
+                Toggle("Simple Test", isOn: $useSimpleShapes)
+                    .toggleStyle(.button)
+                    .foregroundColor(useSimpleShapes ? .green : .secondary)
             }
-            .buttonStyle(.borderedProminent)
-            
-            Toggle("Show Vertices", isOn: $showVertices)
-                .toggleStyle(.button)
-                .foregroundColor(showVertices ? .blue : .secondary)
         }
         .padding()
     }
     
     private var testDisplayView: some View {
-        ZStack {
-            backgroundView
-            
-            // Use ForEach directly in ZStack for better control
-            ForEach(testPieces.indices, id: \.self) { index in
-                SimplePieceView(
-                    piece: testPieces[index],
-                    showVertices: showVertices,
-                    isSelected: selectedPieceIndex == index
-                )
-                .offset(
-                    x: testPieces[index].position.x - 200,  // Offset from center
-                    y: testPieces[index].position.y - 200   // Offset from center
-                )
-                .onTapGesture {
-                    selectedPieceIndex = index
-                    debugLog("Selected \(testPieces[index].type.displayName) piece", category: .ui)
-                }
-                .gesture(
-                    DragGesture()
-                        .onChanged { value in
-                            if selectedPieceIndex != index {
-                                selectedPieceIndex = index
-                                dragStartPosition = testPieces[index].position
-                            }
-                            
-                            let newPosition = CGPoint(
-                                x: dragStartPosition.x + value.translation.width,
-                                y: dragStartPosition.y + value.translation.height
+        GeometryReader { geometry in
+            ZStack {
+                backgroundView
+                
+                // Use actual container bounds for positioning
+                ForEach(testPieces.indices, id: \.self) { index in
+                    Group {
+                        if useSimpleShapes {
+                            // Simple colored rectangle for testing positioning
+                            Rectangle()
+                                .fill(testPieces[index].color)
+                                .frame(width: 40, height: 40)
+                                .overlay(
+                                    Text("\(index + 1)")
+                                        .font(.headline)
+                                        .foregroundColor(.white)
+                                )
+                                .position(
+                                    x: testPieces[index].position.x,
+                                    y: testPieces[index].position.y
+                                )
+                                .onAppear {
+                                    debugLog("🟩 Simple shape \(index + 1) positioned at (\(String(format: "%.1f", testPieces[index].position.x)), \(String(format: "%.1f", testPieces[index].position.y)))", category: .debug)
+                                }
+                        } else {
+                            SimplePieceView(
+                                piece: testPieces[index],
+                                showVertices: showVertices,
+                                isSelected: selectedPieceIndex == index
                             )
-                            testPieces[index] = testPieces[index].moved(to: newPosition)
+                            .position(
+                                x: testPieces[index].position.x,
+                                y: testPieces[index].position.y
+                            )
+                            .background(
+                                // Debug: Add a small indicator at the exact calculated position
+                                Circle()
+                                    .fill(Color.blue.opacity(0.5))
+                                    .frame(width: 8, height: 8)
+                                    .onAppear {
+                                        debugLog("🔵 Piece \(index + 1) (\(testPieces[index].type.displayName)) - Expected at (\(String(format: "%.1f", testPieces[index].position.x)), \(String(format: "%.1f", testPieces[index].position.y)))", category: .debug)
+                                        debugLog("🔵 Piece \(index + 1) vertices: \(testPieces[index].currentVertices)", category: .debug)
+                                        debugLog("🔵 Piece \(index + 1) baseVertices: \(testPieces[index].type.baseVertices)", category: .debug)
+                                    }
+                            )
                         }
-                        .onEnded { _ in
-                            debugLog("Finished dragging \(testPieces[index].type.displayName)", category: .ui)
+                    }
+                    .onTapGesture {
+                        selectedPieceIndex = index
+                        debugLog("Selected \(testPieces[index].type.displayName) piece", category: .ui)
+                    }
+                    .gesture(
+                        DragGesture()
+                            .onChanged { value in
+                                if selectedPieceIndex != index {
+                                    selectedPieceIndex = index
+                                    dragStartPosition = testPieces[index].position
+                                }
+                                
+                                // Constrain to container bounds
+                                let newX = max(0, min(geometry.size.width, dragStartPosition.x + value.translation.width))
+                                let newY = max(0, min(geometry.size.height, dragStartPosition.y + value.translation.height))
+                                
+                                let newPosition = CGPoint(x: newX, y: newY)
+                                testPieces[index] = testPieces[index].moved(to: newPosition)
+                                debugLog("Dragging \(testPieces[index].type.displayName) to (\(String(format: "%.1f", newPosition.x)), \(String(format: "%.1f", newPosition.y))) in bounds \(geometry.size)", category: .ui)
+                            }
+                            .onEnded { _ in
+                                debugLog("Finished dragging \(testPieces[index].type.displayName)", category: .ui)
+                            }
+                    )
+                }
+                
+                // Debug test dot - should appear in top right corner
+                if showTestDot {
+                    let topRightX = geometry.size.width - 20
+                    let topRightY: CGFloat = 20
+                    
+                    Circle()
+                        .fill(Color.red)
+                        .frame(width: 30, height: 30)
+                        .position(x: topRightX, y: topRightY)
+                        .overlay(
+                            Text("🎯")
+                                .font(.title2)
+                                .position(x: topRightX, y: topRightY)
+                        )
+                        .onAppear {
+                            debugLog("🎯 TEST DOT: Container size = \(geometry.size)", category: .debug)
+                            debugLog("🎯 TEST DOT: Positioned at (\(topRightX), \(topRightY)) - should be top right corner", category: .debug)
                         }
-                )
+                }
+            }
+            .onAppear {
+                // Update piece positions when container size is known
+                containerSize = geometry.size
+                setupTestPieces(in: geometry.size)
+                debugLog("Container appeared with size: \(geometry.size)", category: .ui)
+            }
+            .onChange(of: geometry.size) { _, newSize in
+                // Reposition pieces when container size changes (e.g., rotation)
+                containerSize = newSize
+                setupTestPieces(in: newSize)
+                debugLog("Container size changed to: \(newSize)", category: .ui)
             }
         }
         .frame(height: 400)
@@ -153,21 +237,25 @@ struct SimplePieceTestView: View {
         .cornerRadius(12)
     }
     
-    private func setupTestPieces() {
-        // Position pieces within the ZStack coordinate space
-        // The ZStack with .position() uses coordinates where (0,0) is top-left
-        // For a 400px tall canvas, center is at (width/2, 200)
+    private func setupTestPieces(in containerSize: CGSize) {
+        // Position pieces relative to actual container bounds
+        // GeometryReader provides the real available space
+        debugLog("📏 SETUP: Container size = \(containerSize)", category: .debug)
         
-        // We'll position pieces in a grid pattern
-        // Assume canvas width of about 350 (typical iPhone width minus padding)
-        let centerX: CGFloat = 175  // Center of typical canvas width
-        let centerY: CGFloat = 200  // Center of 400px height
-        let spacing: CGFloat = 80   // Spacing between pieces
+        let centerX = containerSize.width / 2
+        let centerY = containerSize.height / 2
+        let spacing = min(containerSize.width, containerSize.height) * 0.2  // 20% of smaller dimension
         
-        // Calculate row positions
-        let topRow = centerY - 100     // Top row at y=100
-        let middleRow = centerY         // Middle row at y=200
-        let bottomRow = centerY + 100   // Bottom row at y=300
+        // Calculate row positions as fractions of container height
+        let topRow = centerY - spacing     // Top row above center
+        let middleRow = centerY            // Middle row at center
+        let bottomRow = centerY + spacing  // Bottom row below center
+        
+        debugLog("📏 CALCULATED POSITIONS:", category: .debug)
+        debugLog("   centerX: \(centerX), centerY: \(centerY)", category: .debug)
+        debugLog("   spacing: \(spacing)", category: .debug)
+        debugLog("   topRow: \(topRow), middleRow: \(middleRow), bottomRow: \(bottomRow)", category: .debug)
+        debugLog("   Container bounds: (0,0) to (\(containerSize.width), \(containerSize.height))", category: .debug)
         
         testPieces = [
             // Row 1 - Top of canvas
@@ -226,7 +314,10 @@ struct SimplePieceTestView: View {
             )
         ]
         
-        debugLog("Created \(testPieces.count) test pieces with corrected tangram shapes", category: .debug)
+        debugLog("🎲 CREATED \(testPieces.count) pieces:", category: .debug)
+        for (index, piece) in testPieces.enumerated() {
+            debugLog("   \(index + 1). \(piece.type.displayName) at (\(String(format: "%.1f", piece.position.x)), \(String(format: "%.1f", piece.position.y)))", category: .debug)
+        }
     }
     
     private func rotateAllPieces() {
@@ -253,6 +344,12 @@ struct SimplePieceView: View {
                     isSelected ? Color.yellow : Constants.Colors.UI.strokeColor,
                     lineWidth: isSelected ? 4 : 2
                 )
+                .onAppear {
+                    debugLog("🎨 SimplePieceView rendered: \(piece.type.displayName) with \(relativeVertices.count) vertices", category: .debug)
+                    for (i, vertex) in relativeVertices.enumerated() {
+                        debugLog("🎨   Vertex \(i): (\(String(format: "%.1f", vertex.x)), \(String(format: "%.1f", vertex.y)))", category: .debug)
+                    }
+                }
             
             // Text labels removed for cleaner visualization
             
@@ -273,16 +370,41 @@ struct SimplePieceView: View {
                 }
             }
         }
+        .frame(width: 150, height: 150)  // Provide consistent frame size for shape centering
         // Remove .position() - positioning is now handled by parent view with .offset()
     }
     
-    // Convert absolute vertices to relative positions centered on the piece
+    // Convert absolute vertices to relative positions centered in the view
     private var relativeVertices: [Vertex] {
-        return piece.type.baseVertices.map { baseVertex in
-            // Apply rotation around origin, but don't translate
+        // Apply rotation to base vertices
+        let rotatedVertices = piece.type.baseVertices.map { baseVertex in
             let rotatedX = baseVertex.x * cos(piece.rotation) - baseVertex.y * sin(piece.rotation)
             let rotatedY = baseVertex.x * sin(piece.rotation) + baseVertex.y * cos(piece.rotation)
             return Vertex(x: rotatedX, y: rotatedY)
+        }
+        
+        // Find the bounds of the rotated shape
+        guard !rotatedVertices.isEmpty else { return [] }
+        let minX = rotatedVertices.map { $0.x }.min() ?? 0
+        let maxX = rotatedVertices.map { $0.x }.max() ?? 0
+        let minY = rotatedVertices.map { $0.y }.min() ?? 0
+        let maxY = rotatedVertices.map { $0.y }.max() ?? 0
+        
+        // Calculate shape center point
+        let shapeCenterX = (minX + maxX) / 2
+        let shapeCenterY = (minY + maxY) / 2
+        
+        // Assume view frame of 150x150 (will be clipped appropriately)
+        let viewSize: CGFloat = 150
+        let viewCenterX = viewSize / 2
+        let viewCenterY = viewSize / 2
+        
+        // Center the shape in the view by offsetting vertices
+        return rotatedVertices.map { vertex in
+            Vertex(
+                x: vertex.x - shapeCenterX + viewCenterX,
+                y: vertex.y - shapeCenterY + viewCenterY
+            )
         }
     }
     
@@ -298,19 +420,27 @@ struct TangramShape: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
         
-        guard !vertices.isEmpty else { return path }
+        guard !vertices.isEmpty else { 
+            debugLog("⚠️ TangramShape: No vertices provided", category: .debug)
+            return path 
+        }
+        
+        debugLog("🎯 TangramShape: Creating path with \(vertices.count) vertices in rect \(rect)", category: .debug)
         
         // Move to first vertex
         let firstVertex = vertices[0]
         path.move(to: CGPoint(x: firstVertex.x, y: firstVertex.y))
+        debugLog("🎯   Start: (\(String(format: "%.1f", firstVertex.x)), \(String(format: "%.1f", firstVertex.y)))", category: .debug)
         
         // Draw lines to all other vertices
-        for vertex in vertices.dropFirst() {
+        for (i, vertex) in vertices.dropFirst().enumerated() {
             path.addLine(to: CGPoint(x: vertex.x, y: vertex.y))
+            debugLog("🎯   Line \(i + 1): (\(String(format: "%.1f", vertex.x)), \(String(format: "%.1f", vertex.y)))", category: .debug)
         }
         
         // Close the path back to first vertex
         path.closeSubpath()
+        debugLog("🎯   Path closed", category: .debug)
         
         return path
     }
