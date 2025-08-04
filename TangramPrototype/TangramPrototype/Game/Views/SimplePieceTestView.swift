@@ -411,6 +411,7 @@ struct SimplePieceView: View {
     private var relativeShape: some Shape {
         TangramShape(vertices: relativeVertices)
     }
+
 }
 
 // Custom Shape that draws a polygon from vertex coordinates
