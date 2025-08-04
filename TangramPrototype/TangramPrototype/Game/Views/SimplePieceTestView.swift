@@ -158,62 +158,70 @@ struct SimplePieceTestView: View {
     }
     
     private func setupTestPieces() {
-        // Center all pieces within the 400px testing area in a 3x3 grid
-        let centerX: CGFloat = 200  // Horizontal center
-        let spacing: CGFloat = 100  // Spacing between pieces
+        // Position pieces within the gray canvas area (400px height)
+        // Canvas starts around y: 280 (after header + buttons), so center within that area
+        let canvasTop: CGFloat = 300      // Starting Y of the gray canvas
+        let canvasHeight: CGFloat = 400   // Height of gray canvas
+        let centerX: CGFloat = 200        // Horizontal center of canvas
+        let spacing: CGFloat = 100        // Spacing between pieces
+        
+        // Calculate Y positions within the canvas area
+        let topRow = canvasTop + canvasHeight * 0.25     // 25% down in canvas
+        let middleRow = canvasTop + canvasHeight * 0.5   // 50% down in canvas  
+        let bottomRow = canvasTop + canvasHeight * 0.75  // 75% down in canvas
         
         testPieces = [
-            // Row 1 - Top row (y: 140)
+            // Row 1 - Top of canvas
             // Large Triangle 1 (red) - top left
             Piece(
                 type: .largeTriangle1,
-                position: CGPoint(x: centerX - spacing, y: 140),
+                position: CGPoint(x: centerX - spacing, y: topRow),
                 rotation: 0,
                 color: Constants.Colors.Pieces.largeTriangle1
             ),
             // Medium Triangle (green) - top center  
             Piece(
                 type: .mediumTriangle,
-                position: CGPoint(x: centerX, y: 140),
+                position: CGPoint(x: centerX, y: topRow),
                 rotation: Double.pi / 2,
                 color: Constants.Colors.Pieces.mediumTriangle
             ),
             // Large Triangle 2 (navy) - top right
             Piece(
                 type: .largeTriangle2,
-                position: CGPoint(x: centerX + spacing, y: 140),
+                position: CGPoint(x: centerX + spacing, y: topRow),
                 rotation: Double.pi,
                 color: Constants.Colors.Pieces.largeTriangle2
             ),
             
-            // Row 2 - Middle row (y: 240)
+            // Row 2 - Middle of canvas
             // Small Triangle 1 (blue) - middle left
             Piece(
                 type: .smallTriangle1,
-                position: CGPoint(x: centerX - spacing, y: 240),
+                position: CGPoint(x: centerX - spacing, y: middleRow),
                 rotation: Double.pi / 4,
                 color: Constants.Colors.Pieces.smallTriangle1
             ),
             // Square (yellow) - center
             Piece(
                 type: .square,
-                position: CGPoint(x: centerX, y: 240),
+                position: CGPoint(x: centerX, y: middleRow),
                 rotation: 0,
                 color: Constants.Colors.Pieces.square
             ),
             // Small Triangle 2 (purple) - middle right
             Piece(
                 type: .smallTriangle2,
-                position: CGPoint(x: centerX + spacing, y: 240),
+                position: CGPoint(x: centerX + spacing, y: middleRow),
                 rotation: Double.pi * 3/4,
                 color: Constants.Colors.Pieces.smallTriangle2
             ),
             
-            // Row 3 - Bottom row (y: 340)
+            // Row 3 - Bottom of canvas
             // Parallelogram (orange) - bottom center
             Piece(
                 type: .parallelogram,
-                position: CGPoint(x: centerX, y: 340),
+                position: CGPoint(x: centerX, y: bottomRow),
                 rotation: Double.pi / 6,
                 color: Constants.Colors.Pieces.parallelogram
             )
