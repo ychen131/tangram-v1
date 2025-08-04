@@ -12,57 +12,16 @@ import SwiftUI
 struct SimplePieceTestView: View {
     
     @State private var testPieces: [Piece] = []
+    @State private var selectedPieceIndex: Int? = nil
     @State private var showVertices = true
+    @State private var dragStartPosition: CGPoint = .zero
     
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                // Header
-                Text("🧩 Piece Model Test")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                
-                Text("Testing geometric calculations and transformations")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                
-                // Controls
-                HStack {
-                    Button("Reset Pieces") {
-                        setupTestPieces()
-                    }
-                    .buttonStyle(.borderedProminent)
-                    
-                    Button("Toggle Vertices") {
-                        showVertices.toggle()
-                    }
-                    .buttonStyle(.bordered)
-                    
-                    Button("Rotate All") {
-                        rotateAllPieces()
-                    }
-                    .buttonStyle(.bordered)
-                }
-                .padding()
-                
-                // Test display area
-                ZStack {
-                    Rectangle()
-                        .fill(Constants.Colors.UI.background)
-                        .frame(height: 400)
-                        .cornerRadius(12)
-                    
-                    // Display pieces
-                    ForEach(testPieces.indices, id: \.self) { index in
-                        SimplePieceView(
-                            piece: testPieces[index],
-                            showVertices: showVertices
-                        )
-                    }
-                }
-                .padding()
-                
-                // Debug information
+                headerView
+                controlsView
+                testDisplayView
                 debugInfoView
             }
             .padding()
@@ -70,6 +29,95 @@ struct SimplePieceTestView: View {
         .onAppear {
             setupTestPieces()
         }
+    }
+    
+    private var headerView: some View {
+        VStack(spacing: 8) {
+            Text("🧩 Piece Model Test")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+            
+            Text("Testing geometric calculations and transformations")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+        }
+    }
+    
+    private var controlsView: some View {
+        HStack {
+            Button("Reset Pieces") {
+                setupTestPieces()
+            }
+            .buttonStyle(.borderedProminent)
+            
+            Button("Rotate All") {
+                rotateAllPieces()
+            }
+            .buttonStyle(.borderedProminent)
+            
+            Toggle("Show Vertices", isOn: $showVertices)
+                .toggleStyle(.button)
+                .foregroundColor(showVertices ? .blue : .secondary)
+        }
+        .padding()
+    }
+    
+    private var testDisplayView: some View {
+        ZStack {
+            backgroundView
+            piecesView
+        }
+        .padding()
+    }
+    
+    private var backgroundView: some View {
+        Rectangle()
+            .fill(Constants.Colors.UI.background)
+            .frame(height: 400)
+            .cornerRadius(12)
+            .onTapGesture {
+                selectedPieceIndex = nil
+                debugLog("Deselected all pieces", category: .ui)
+            }
+    }
+    
+    private var piecesView: some View {
+        ForEach(testPieces.indices, id: \.self) { index in
+            pieceView(at: index)
+        }
+    }
+    
+    private func pieceView(at index: Int) -> some View {
+        SimplePieceView(
+            piece: testPieces[index],
+            showVertices: showVertices,
+            isSelected: selectedPieceIndex == index
+        )
+        .onTapGesture {
+            selectedPieceIndex = index
+            debugLog("Selected \(testPieces[index].type.displayName) piece", category: .ui)
+        }
+        .gesture(
+            DragGesture()
+                .onChanged { value in
+                    if selectedPieceIndex != index {
+                        // First touch - store the original position
+                        selectedPieceIndex = index
+                        dragStartPosition = testPieces[index].position
+                    }
+                    
+                    // Calculate new position from original start position + translation
+                    let newPosition = CGPoint(
+                        x: dragStartPosition.x + value.translation.width,
+                        y: dragStartPosition.y + value.translation.height
+                    )
+                    testPieces[index] = testPieces[index].moved(to: newPosition)
+                    debugLog("Dragging \(testPieces[index].type.displayName) to (\(String(format: "%.1f", newPosition.x)), \(String(format: "%.1f", newPosition.y)))", category: .ui)
+                }
+                .onEnded { _ in
+                    debugLog("Finished dragging \(testPieces[index].type.displayName)", category: .ui)
+                }
+        )
     }
     
     private var debugInfoView: some View {
@@ -83,26 +131,24 @@ struct SimplePieceTestView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("\(piece.type.displayName)")
                         .font(.subheadline)
-                        .fontWeight(.medium)
+                        .fontWeight(.semibold)
                         .foregroundColor(piece.color)
                     
-                    Text("Position: (\(String(format: "%.0f", piece.position.x)), \(String(format: "%.0f", piece.position.y)))")
-                        .font(.caption)
-                    
-                    Text("Rotation: \(String(format: "%.1f", piece.rotation * 180 / Double.pi))°")
-                        .font(.caption)
+                    HStack {
+                        Text("Position: (\(String(format: "%.1f", piece.position.x)), \(String(format: "%.1f", piece.position.y)))")
+                        Spacer()
+                        Text("Rotation: \(String(format: "%.2f", piece.rotation))°")
+                    }
+                    .font(.caption)
+                    .foregroundColor(.secondary)
                     
                     Text("Vertices: \(piece.currentVertices.count)")
                         .font(.caption)
-                    
-                    if !piece.currentVertices.isEmpty {
-                        Text("First vertex: (\(String(format: "%.1f", piece.currentVertices[0].x)), \(String(format: "%.1f", piece.currentVertices[0].y)))")
-                            .font(.caption)
-                            .foregroundColor(.blue)
-                    }
+                        .foregroundColor(.secondary)
                 }
-                .padding(8)
-                .background(Color.black.opacity(0.05))
+                .padding(.vertical, 4)
+                .padding(.horizontal, 8)
+                .background(piece.color.opacity(0.1))
                 .cornerRadius(8)
             }
         }
@@ -112,57 +158,64 @@ struct SimplePieceTestView: View {
     }
     
     private func setupTestPieces() {
+        // Center all pieces within the 400px testing area in a 3x3 grid
+        let centerX: CGFloat = 200  // Horizontal center
+        let spacing: CGFloat = 100  // Spacing between pieces
+        
         testPieces = [
-            // Large Triangle (2×2 legs) - no rotation to see base shape clearly
+            // Row 1 - Top row (y: 140)
+            // Large Triangle 1 (red) - top left
             Piece(
                 type: .largeTriangle1,
-                position: CGPoint(x: 120, y: 120),
+                position: CGPoint(x: centerX - spacing, y: 140),
                 rotation: 0,
                 color: Constants.Colors.Pieces.largeTriangle1
             ),
-            // Small Triangle (1×1 legs) - rotated 45° 
-            Piece(
-                type: .smallTriangle1,
-                position: CGPoint(x: 280, y: 120),
-                rotation: Double.pi / 4,
-                color: Constants.Colors.Pieces.smallTriangle1
-            ),
-            // Square (1×1 sides) - displayed as diamond, no additional rotation
-            Piece(
-                type: .square,
-                position: CGPoint(x: 120, y: 220),
-                rotation: 0,
-                color: Constants.Colors.Pieces.square
-            ),
-            // Medium Triangle (√2×√2 legs) - rotated 90°
+            // Medium Triangle (green) - top center  
             Piece(
                 type: .mediumTriangle,
-                position: CGPoint(x: 280, y: 220),
+                position: CGPoint(x: centerX, y: 140),
                 rotation: Double.pi / 2,
                 color: Constants.Colors.Pieces.mediumTriangle
             ),
-            // Parallelogram (base=√2, height=1/√2) - rotated 30°
-            Piece(
-                type: .parallelogram,
-                position: CGPoint(x: 200, y: 320),
-                rotation: Double.pi / 6,
-                color: Constants.Colors.Pieces.parallelogram
-            ),
-            
-            // Second Large Triangle (2×2 legs) - rotated 180°
+            // Large Triangle 2 (navy) - top right
             Piece(
                 type: .largeTriangle2,
-                position: CGPoint(x: 120, y: 420),
+                position: CGPoint(x: centerX + spacing, y: 140),
                 rotation: Double.pi,
                 color: Constants.Colors.Pieces.largeTriangle2
             ),
             
-            // Second Small Triangle (1×1 legs) - rotated 135°
+            // Row 2 - Middle row (y: 240)
+            // Small Triangle 1 (blue) - middle left
+            Piece(
+                type: .smallTriangle1,
+                position: CGPoint(x: centerX - spacing, y: 240),
+                rotation: Double.pi / 4,
+                color: Constants.Colors.Pieces.smallTriangle1
+            ),
+            // Square (yellow) - center
+            Piece(
+                type: .square,
+                position: CGPoint(x: centerX, y: 240),
+                rotation: 0,
+                color: Constants.Colors.Pieces.square
+            ),
+            // Small Triangle 2 (purple) - middle right
             Piece(
                 type: .smallTriangle2,
-                position: CGPoint(x: 280, y: 420),
+                position: CGPoint(x: centerX + spacing, y: 240),
                 rotation: Double.pi * 3/4,
                 color: Constants.Colors.Pieces.smallTriangle2
+            ),
+            
+            // Row 3 - Bottom row (y: 340)
+            // Parallelogram (orange) - bottom center
+            Piece(
+                type: .parallelogram,
+                position: CGPoint(x: centerX, y: 340),
+                rotation: Double.pi / 6,
+                color: Constants.Colors.Pieces.parallelogram
             )
         ]
         
@@ -182,45 +235,52 @@ struct SimplePieceTestView: View {
 struct SimplePieceView: View {
     let piece: Piece
     let showVertices: Bool
+    let isSelected: Bool
     
     var body: some View {
         ZStack {
-            // Draw actual tangram shape using current vertices
-            actualTangramShape
+            // Draw actual tangram shape using relative vertices
+            relativeShape
                 .fill(piece.color.opacity(0.6))
-                                    .stroke(Constants.Colors.UI.strokeColor, lineWidth: 2)
+                .stroke(
+                    isSelected ? Color.yellow : Constants.Colors.UI.strokeColor,
+                    lineWidth: isSelected ? 4 : 2
+                )
             
-            // Show piece type label
-            Text(piece.type.displayName)
-                .font(.caption2)
-                .fontWeight(.bold)
-                .foregroundColor(.white)
-                .padding(4)
-                .background(Color.black.opacity(0.7))
-                .cornerRadius(4)
-                .position(piece.centerPosition)
+            // Text labels removed for cleaner visualization
             
-            // Vertex visualization - these should now align perfectly with shape corners
+            // Vertex visualization using relative positions
             if showVertices {
-                ForEach(piece.currentVertices.indices, id: \.self) { index in
-                    let vertex = piece.currentVertices[index]
-                                            Circle()
-                            .fill(Constants.Colors.UI.vertexDot)
+                ForEach(relativeVertices.indices, id: \.self) { index in
+                    let vertex = relativeVertices[index]
+                    Circle()
+                        .fill(Constants.Colors.UI.vertexDot)
                         .frame(width: 10, height: 10)
                         .position(x: vertex.x, y: vertex.y)
                         .overlay(
                             Text("\(index)")
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundColor(.white)
+                                .position(x: vertex.x, y: vertex.y)
                         )
                 }
             }
         }
+        .position(piece.position) // Position the entire view at the piece's center
     }
     
-    // Draw the actual tangram shape using transformed vertices
-    private var actualTangramShape: some Shape {
-        TangramShape(vertices: piece.currentVertices)
+    // Convert absolute vertices to relative positions centered on the piece
+    private var relativeVertices: [Vertex] {
+        return piece.type.baseVertices.map { baseVertex in
+            // Apply rotation around origin, but don't translate
+            let rotatedX = baseVertex.x * cos(piece.rotation) - baseVertex.y * sin(piece.rotation)
+            let rotatedY = baseVertex.x * sin(piece.rotation) + baseVertex.y * cos(piece.rotation)
+            return Vertex(x: rotatedX, y: rotatedY)
+        }
+    }
+    
+    private var relativeShape: some Shape {
+        TangramShape(vertices: relativeVertices)
     }
 }
 
