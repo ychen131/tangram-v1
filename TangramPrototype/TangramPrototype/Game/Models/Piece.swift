@@ -60,9 +60,6 @@ struct Piece: Identifiable, Equatable {
         // Get base vertices for this piece type
         let baseVertices = type.baseVertices
         
-        // Create center point for rotation (piece position)
-        let center = Vertex(from: position)
-        
         // Transform each vertex: 
         // 1. Start with base vertex
         // 2. Rotate around origin (0,0) by current rotation
@@ -298,7 +295,7 @@ extension Piece: Codable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
-        let decodedId = try container.decode(UUID.self, forKey: .id)
+        _ = try container.decode(UUID.self, forKey: .id)  // Decode but don't use (id is let constant)
         type = try container.decode(PieceType.self, forKey: .type)
         position = try container.decode(CGPoint.self, forKey: .position)
         rotation = try container.decode(Double.self, forKey: .rotation)

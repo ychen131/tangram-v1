@@ -65,59 +65,55 @@ struct SimplePieceTestView: View {
     private var testDisplayView: some View {
         ZStack {
             backgroundView
-            piecesView
+            
+            // Use ForEach directly in ZStack for better control
+            ForEach(testPieces.indices, id: \.self) { index in
+                SimplePieceView(
+                    piece: testPieces[index],
+                    showVertices: showVertices,
+                    isSelected: selectedPieceIndex == index
+                )
+                .offset(
+                    x: testPieces[index].position.x - 200,  // Offset from center
+                    y: testPieces[index].position.y - 200   // Offset from center
+                )
+                .onTapGesture {
+                    selectedPieceIndex = index
+                    debugLog("Selected \(testPieces[index].type.displayName) piece", category: .ui)
+                }
+                .gesture(
+                    DragGesture()
+                        .onChanged { value in
+                            if selectedPieceIndex != index {
+                                selectedPieceIndex = index
+                                dragStartPosition = testPieces[index].position
+                            }
+                            
+                            let newPosition = CGPoint(
+                                x: dragStartPosition.x + value.translation.width,
+                                y: dragStartPosition.y + value.translation.height
+                            )
+                            testPieces[index] = testPieces[index].moved(to: newPosition)
+                        }
+                        .onEnded { _ in
+                            debugLog("Finished dragging \(testPieces[index].type.displayName)", category: .ui)
+                        }
+                )
+            }
         }
+        .frame(height: 400)
         .padding()
     }
     
     private var backgroundView: some View {
         Rectangle()
-            .fill(Constants.Colors.UI.background)
+            .fill(Color.gray.opacity(0.2))  // More visible gray
             .frame(height: 400)
             .cornerRadius(12)
             .onTapGesture {
                 selectedPieceIndex = nil
                 debugLog("Deselected all pieces", category: .ui)
             }
-    }
-    
-    private var piecesView: some View {
-        ForEach(testPieces.indices, id: \.self) { index in
-            pieceView(at: index)
-        }
-    }
-    
-    private func pieceView(at index: Int) -> some View {
-        SimplePieceView(
-            piece: testPieces[index],
-            showVertices: showVertices,
-            isSelected: selectedPieceIndex == index
-        )
-        .onTapGesture {
-            selectedPieceIndex = index
-            debugLog("Selected \(testPieces[index].type.displayName) piece", category: .ui)
-        }
-        .gesture(
-            DragGesture()
-                .onChanged { value in
-                    if selectedPieceIndex != index {
-                        // First touch - store the original position
-                        selectedPieceIndex = index
-                        dragStartPosition = testPieces[index].position
-                    }
-                    
-                    // Calculate new position from original start position + translation
-                    let newPosition = CGPoint(
-                        x: dragStartPosition.x + value.translation.width,
-                        y: dragStartPosition.y + value.translation.height
-                    )
-                    testPieces[index] = testPieces[index].moved(to: newPosition)
-                    debugLog("Dragging \(testPieces[index].type.displayName) to (\(String(format: "%.1f", newPosition.x)), \(String(format: "%.1f", newPosition.y)))", category: .ui)
-                }
-                .onEnded { _ in
-                    debugLog("Finished dragging \(testPieces[index].type.displayName)", category: .ui)
-                }
-        )
     }
     
     private var debugInfoView: some View {
@@ -158,17 +154,20 @@ struct SimplePieceTestView: View {
     }
     
     private func setupTestPieces() {
-        // Position pieces within the gray canvas area (400px height)
-        // Canvas starts around y: 280 (after header + buttons), so center within that area
-        let canvasTop: CGFloat = 300      // Starting Y of the gray canvas
-        let canvasHeight: CGFloat = 400   // Height of gray canvas
-        let centerX: CGFloat = 200        // Horizontal center of canvas
-        let spacing: CGFloat = 100        // Spacing between pieces
+        // Position pieces within the ZStack coordinate space
+        // The ZStack with .position() uses coordinates where (0,0) is top-left
+        // For a 400px tall canvas, center is at (width/2, 200)
         
-        // Calculate Y positions within the canvas area
-        let topRow = canvasTop + canvasHeight * 0.25     // 25% down in canvas
-        let middleRow = canvasTop + canvasHeight * 0.5   // 50% down in canvas  
-        let bottomRow = canvasTop + canvasHeight * 0.75  // 75% down in canvas
+        // We'll position pieces in a grid pattern
+        // Assume canvas width of about 350 (typical iPhone width minus padding)
+        let centerX: CGFloat = 175  // Center of typical canvas width
+        let centerY: CGFloat = 200  // Center of 400px height
+        let spacing: CGFloat = 80   // Spacing between pieces
+        
+        // Calculate row positions
+        let topRow = centerY - 100     // Top row at y=100
+        let middleRow = centerY         // Middle row at y=200
+        let bottomRow = centerY + 100   // Bottom row at y=300
         
         testPieces = [
             // Row 1 - Top of canvas
@@ -274,7 +273,7 @@ struct SimplePieceView: View {
                 }
             }
         }
-        .position(piece.position) // Position the entire view at the piece's center
+        // Remove .position() - positioning is now handled by parent view with .offset()
     }
     
     // Convert absolute vertices to relative positions centered on the piece
