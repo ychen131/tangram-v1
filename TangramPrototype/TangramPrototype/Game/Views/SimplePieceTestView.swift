@@ -177,6 +177,8 @@ struct SimplePieceTestView: View {
                 containerSize = geometry.size
                 setupTestPieces(in: geometry.size)
                 debugLog("Container appeared with size: \(geometry.size)", category: .ui)
+                
+                // GeometryHelpers is ready for use!
             }
             .onChange(of: geometry.size) { _, newSize in
                 // Reposition pieces when container size changes (e.g., rotation)
@@ -411,6 +413,8 @@ struct SimplePieceView: View {
     private var relativeShape: some Shape {
         TangramShape(vertices: relativeVertices)
     }
+    
+
 
 }
 
