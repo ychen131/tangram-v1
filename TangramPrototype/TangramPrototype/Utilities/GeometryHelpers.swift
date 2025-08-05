@@ -274,6 +274,322 @@ struct GeometryHelpers {
             return isNear
         }
     }
+    
+    // MARK: - Transformation Functions (Subtask 7.3)
+    
+    /// Rotates a vertex around an arbitrary pivot point by the specified angle
+    /// - Parameters:
+    ///   - vertex: The vertex to rotate
+    ///   - pivot: The center point of rotation
+    ///   - angle: Rotation angle in radians (positive = counterclockwise)
+    /// - Returns: New vertex at the rotated position
+    static func rotateVertex(_ vertex: Vertex, around pivot: Vertex, by angle: Double) -> Vertex {
+        debugLog("🔄 GeometryHelpers.rotateVertex: Rotating (\(vertex.x), \(vertex.y)) around (\(pivot.x), \(pivot.y)) by \(angle) radians", category: .geometry)
+        
+        // Translate to origin
+        let translatedX = vertex.x - pivot.x
+        let translatedY = vertex.y - pivot.y
+        
+        // Apply rotation matrix
+        let cosAngle = cos(angle)
+        let sinAngle = sin(angle)
+        
+        let rotatedX = translatedX * cosAngle - translatedY * sinAngle
+        let rotatedY = translatedX * sinAngle + translatedY * cosAngle
+        
+        // Translate back
+        let finalX = rotatedX + pivot.x
+        let finalY = rotatedY + pivot.y
+        
+        debugLog("🔄 GeometryHelpers.rotateVertex: Result (\(finalX), \(finalY))", category: .geometry)
+        return Vertex(x: finalX, y: finalY)
+    }
+    
+    /// Rotates an array of vertices around a pivot point
+    /// - Parameters:
+    ///   - vertices: Array of vertices to rotate
+    ///   - pivot: The center point of rotation
+    ///   - angle: Rotation angle in radians (positive = counterclockwise)
+    /// - Returns: Array of rotated vertices
+    static func rotateVertices(_ vertices: [Vertex], around pivot: Vertex, by angle: Double) -> [Vertex] {
+        debugLog("🔄 GeometryHelpers.rotateVertices: Rotating \(vertices.count) vertices by \(angle) radians", category: .geometry)
+        return vertices.map { rotateVertex($0, around: pivot, by: angle) }
+    }
+    
+    /// Scales a vertex relative to an origin point
+    /// - Parameters:
+    ///   - vertex: The vertex to scale
+    ///   - origin: The origin point for scaling (typically center or (0,0))
+    ///   - scale: Scale factor (1.0 = no change, 2.0 = double size, 0.5 = half size)
+    /// - Returns: New vertex at the scaled position
+    static func scaleVertex(_ vertex: Vertex, from origin: Vertex, by scale: Double) -> Vertex {
+        debugLog("📏 GeometryHelpers.scaleVertex: Scaling (\(vertex.x), \(vertex.y)) from (\(origin.x), \(origin.y)) by \(scale)", category: .geometry)
+        
+        let scaledX = origin.x + (vertex.x - origin.x) * scale
+        let scaledY = origin.y + (vertex.y - origin.y) * scale
+        
+        return Vertex(x: scaledX, y: scaledY)
+    }
+    
+    /// Scales an array of vertices relative to an origin point
+    /// - Parameters:
+    ///   - vertices: Array of vertices to scale
+    ///   - origin: The origin point for scaling
+    ///   - scale: Scale factor for all vertices
+    /// - Returns: Array of scaled vertices
+    static func scaleVertices(_ vertices: [Vertex], from origin: Vertex, by scale: Double) -> [Vertex] {
+        debugLog("📏 GeometryHelpers.scaleVertices: Scaling \(vertices.count) vertices by \(scale)", category: .geometry)
+        return vertices.map { scaleVertex($0, from: origin, by: scale) }
+    }
+    
+    /// Translates (moves) a vertex by the specified offset
+    /// - Parameters:
+    ///   - vertex: The vertex to translate
+    ///   - offset: The translation vector (dx, dy)
+    /// - Returns: New vertex at the translated position
+    static func translateVertex(_ vertex: Vertex, by offset: Vertex) -> Vertex {
+        return Vertex(x: vertex.x + offset.x, y: vertex.y + offset.y)
+    }
+    
+    /// Translates (moves) an array of vertices by the specified offset
+    /// - Parameters:
+    ///   - vertices: Array of vertices to translate
+    ///   - offset: The translation vector to apply to all vertices
+    /// - Returns: Array of translated vertices
+    static func translateVertices(_ vertices: [Vertex], by offset: Vertex) -> [Vertex] {
+        debugLog("➡️ GeometryHelpers.translateVertices: Translating \(vertices.count) vertices by (\(offset.x), \(offset.y))", category: .geometry)
+        return vertices.map { translateVertex($0, by: offset) }
+    }
+    
+    /// Applies a combined transformation (translate, rotate, scale) to vertices
+    /// - Parameters:
+    ///   - vertices: Array of vertices to transform
+    ///   - translation: Translation offset to apply first
+    ///   - rotation: Rotation angle in radians around the centroid
+    ///   - scale: Scale factor around the centroid
+    /// - Returns: Array of fully transformed vertices
+    static func transformVertices(_ vertices: [Vertex], 
+                                translation: Vertex = Vertex(x: 0, y: 0),
+                                rotation: Double = 0,
+                                scale: Double = 1.0) -> [Vertex] {
+        debugLog("🔄 GeometryHelpers.transformVertices: Applying combined transform (translate: \(translation), rotate: \(rotation), scale: \(scale))", category: .geometry)
+        
+        // Step 1: Translate
+        var transformed = translateVertices(vertices, by: translation)
+        
+        // Step 2: Rotate around centroid (if rotation specified)
+        if rotation != 0 {
+            let centroid = polygonCentroid(vertices: transformed)
+            transformed = rotateVertices(transformed, around: centroid, by: rotation)
+        }
+        
+        // Step 3: Scale around centroid (if scale != 1.0)
+        if scale != 1.0 {
+            let centroid = polygonCentroid(vertices: transformed)
+            transformed = scaleVertices(transformed, from: centroid, by: scale)
+        }
+        
+        return transformed
+    }
+    
+    // MARK: - Shape Matching/Comparison Functions (Subtask 7.4)
+    
+    /// Determines if two polygons have the same shape (ignoring position, rotation, and scale)
+    /// Uses normalized shape comparison with area ratios and vertex count
+    /// - Parameters:
+    ///   - vertices1: First polygon vertices
+    ///   - vertices2: Second polygon vertices
+    ///   - tolerance: Allowed deviation for floating point comparisons (default: 1e-6)
+    /// - Returns: True if the shapes are geometrically similar
+    static func areShapesSimilar(_ vertices1: [Vertex], _ vertices2: [Vertex], tolerance: Double = 1e-6) -> Bool {
+        debugLog("🔍 GeometryHelpers.areShapesSimilar: Comparing shapes with \(vertices1.count) and \(vertices2.count) vertices", category: .geometry)
+        
+        // Quick checks
+        guard vertices1.count == vertices2.count && vertices1.count >= 3 else {
+            debugLog("🔍 Shape similarity: Different vertex counts or insufficient vertices", category: .geometry)
+            return false
+        }
+        
+        // Calculate normalized shape descriptors
+        let area1 = polygonArea(vertices: vertices1)
+        let area2 = polygonArea(vertices: vertices2)
+        
+        guard area1 > tolerance && area2 > tolerance else {
+            debugLog("🔍 Shape similarity: One or both shapes have zero area", category: .geometry)
+            return false
+        }
+        
+        // Normalize both shapes to unit area and compare relative distances
+        let normalizedVertices1 = normalizeShapeToUnitArea(vertices1)
+        let normalizedVertices2 = normalizeShapeToUnitArea(vertices2)
+        
+        // Try different rotational alignments to account for vertex ordering
+        let rotationSteps = vertices1.count
+        for startOffset in 0..<rotationSteps {
+            if areNormalizedShapesEqual(normalizedVertices1, normalizedVertices2, startOffset: startOffset, tolerance: tolerance) {
+                debugLog("🔍 Shape similarity: Match found at offset \(startOffset)", category: .geometry)
+                return true
+            }
+        }
+        
+        debugLog("🔍 Shape similarity: No match found", category: .geometry)
+        return false
+    }
+    
+    /// Calculates what percentage of polygon1 overlaps with polygon2
+    /// - Parameters:
+    ///   - vertices1: First polygon vertices
+    ///   - vertices2: Second polygon vertices
+    ///   - sampleDensity: Number of sample points per unit area for approximation (default: 100)
+    /// - Returns: Overlap percentage (0.0 to 1.0) where 1.0 means complete overlap
+    static func calculateShapeOverlap(_ vertices1: [Vertex], _ vertices2: [Vertex], sampleDensity: Int = 100) -> Double {
+        debugLog("🔍 GeometryHelpers.calculateShapeOverlap: Calculating overlap between polygons", category: .geometry)
+        
+        guard vertices1.count >= 3 && vertices2.count >= 3 else {
+            debugLog("🔍 Shape overlap: Insufficient vertices", category: .geometry)
+            return 0.0
+        }
+        
+        // Get bounding boxes to determine sampling area
+        let bbox1 = boundingBox(for: vertices1)
+        let bbox2 = boundingBox(for: vertices2)
+        
+        // Create combined bounding box
+        let minX = min(bbox1.minX, bbox2.minX)
+        let maxX = max(bbox1.maxX, bbox2.maxX)
+        let minY = min(bbox1.minY, bbox2.minY)
+        let maxY = max(bbox1.maxY, bbox2.maxY)
+        
+        let width = maxX - minX
+        let height = maxY - minY
+        
+        guard width > 0 && height > 0 else {
+            debugLog("🔍 Shape overlap: Zero-area bounding box", category: .geometry)
+            return 0.0
+        }
+        
+        // Calculate sample grid
+        let samplesX = max(10, Int(sqrt(Double(sampleDensity) * width / height)))
+        let samplesY = max(10, Int(sqrt(Double(sampleDensity) * height / width)))
+        
+        let stepX = width / Double(samplesX - 1)
+        let stepY = height / Double(samplesY - 1)
+        
+        var totalSamples = 0
+        var overlapSamples = 0
+        var shape1Samples = 0
+        
+        // Sample points across the combined bounding box
+        for i in 0..<samplesX {
+            for j in 0..<samplesY {
+                let samplePoint = Vertex(
+                    x: minX + Double(i) * stepX,
+                    y: minY + Double(j) * stepY
+                )
+                
+                let inShape1 = pointInPolygon(point: samplePoint, vertices: vertices1)
+                let inShape2 = pointInPolygon(point: samplePoint, vertices: vertices2)
+                
+                totalSamples += 1
+                
+                if inShape1 {
+                    shape1Samples += 1
+                    if inShape2 {
+                        overlapSamples += 1
+                    }
+                }
+            }
+        }
+        
+        guard shape1Samples > 0 else {
+            debugLog("🔍 Shape overlap: No samples found in first shape", category: .geometry)
+            return 0.0
+        }
+        
+        let overlapPercentage = Double(overlapSamples) / Double(shape1Samples)
+        debugLog("🔍 Shape overlap: \(overlapPercentage * 100)% overlap (\(overlapSamples)/\(shape1Samples) samples)", category: .geometry)
+        
+        return overlapPercentage
+    }
+    
+    /// Finds the best rotational alignment between two similar shapes
+    /// - Parameters:
+    ///   - vertices1: Reference shape vertices
+    ///   - vertices2: Shape to align with reference
+    ///   - angleSteps: Number of rotation angles to test (default: 36, i.e., 10-degree steps)
+    /// - Returns: Optimal rotation angle in radians for best alignment
+    static func findOptimalAlignment(_ vertices1: [Vertex], _ vertices2: [Vertex], angleSteps: Int = 36) -> Double {
+        debugLog("🔍 GeometryHelpers.findOptimalAlignment: Finding optimal rotation between shapes", category: .geometry)
+        
+        guard vertices1.count >= 3 && vertices2.count >= 3 else {
+            debugLog("🔍 Optimal alignment: Insufficient vertices", category: .geometry)
+            return 0.0
+        }
+        
+        let centroid1 = polygonCentroid(vertices: vertices1)
+        let centroid2 = polygonCentroid(vertices: vertices2)
+        
+        var bestAngle = 0.0
+        var bestOverlap = 0.0
+        
+        let angleStep = 2.0 * .pi / Double(angleSteps)
+        
+        for i in 0..<angleSteps {
+            let testAngle = Double(i) * angleStep
+            
+            // Rotate vertices2 around its centroid by testAngle
+            let rotatedVertices2 = rotateVertices(vertices2, around: centroid2, by: testAngle)
+            
+            // Translate to align centroids
+            let offset = Vertex(x: centroid1.x - centroid2.x, y: centroid1.y - centroid2.y)
+            let alignedVertices2 = translateVertices(rotatedVertices2, by: offset)
+            
+            // Calculate overlap
+            let overlap = calculateShapeOverlap(vertices1, alignedVertices2, sampleDensity: 50)
+            
+            if overlap > bestOverlap {
+                bestOverlap = overlap
+                bestAngle = testAngle
+            }
+        }
+        
+        debugLog("🔍 Optimal alignment: Best angle \(bestAngle) radians with \(bestOverlap * 100)% overlap", category: .geometry)
+        return bestAngle
+    }
+    
+    // MARK: - Private Helper Functions for Shape Matching
+    
+    /// Normalizes a shape to unit area while preserving proportions
+    private static func normalizeShapeToUnitArea(_ vertices: [Vertex]) -> [Vertex] {
+        let area = polygonArea(vertices: vertices)
+        guard area > 1e-10 else { return vertices }
+        
+        let scaleFactor = 1.0 / sqrt(area)
+        let centroid = polygonCentroid(vertices: vertices)
+        
+        return scaleVertices(vertices, from: centroid, by: scaleFactor)
+    }
+    
+    /// Compares two normalized shapes with different vertex orderings
+    private static func areNormalizedShapesEqual(_ vertices1: [Vertex], _ vertices2: [Vertex], 
+                                               startOffset: Int, tolerance: Double) -> Bool {
+        let count = vertices1.count
+        
+        for i in 0..<count {
+            let idx1 = i
+            let idx2 = (i + startOffset) % count
+            
+            let vertex1 = vertices1[idx1]
+            let vertex2 = vertices2[idx2]
+            
+            let distance = sqrt(pow(vertex1.x - vertex2.x, 2) + pow(vertex1.y - vertex2.y, 2))
+            if distance > tolerance {
+                return false
+            }
+        }
+        
+        return true
+    }
 }
 
 // MARK: - Debug Extensions
